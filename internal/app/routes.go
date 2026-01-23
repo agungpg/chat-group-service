@@ -8,4 +8,6 @@ func RegisterRoutes(app *fiber.App, c *Container) {
 
 	app.Get("/profile", c.AuthMiddlerware.JWTMiddleware(), c.ProfileHandler.GetProfile)
 	app.Put("/profile", c.AuthMiddlerware.JWTMiddleware(), c.ProfileHandler.UpdateProfile)
+
+	app.Post("/notification/push", c.AuthMiddlerware.JWTMiddleware(), c.NotificationHandler.PushNotification)
 }

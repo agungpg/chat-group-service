@@ -3,14 +3,16 @@ package app
 import (
 	"github.com/agungpg/group-chat-service/internal/auth"
 	"github.com/agungpg/group-chat-service/internal/friend"
+	"github.com/agungpg/group-chat-service/internal/notification"
 	"github.com/agungpg/group-chat-service/internal/profile"
 	"github.com/uptrace/bun"
 )
 
 type Container struct {
-	AuthHandler    *auth.Handler
-	ProfileHandler *profile.Handler
-	FriendHandler  *friend.Handler
+	AuthHandler         *auth.Handler
+	ProfileHandler      *profile.Handler
+	FriendHandler       *friend.Handler
+	NotificationHandler *notification.Handler
 	// ConversationHandler *conversation.Handler
 	// InviteHandler       *invite.Handler
 	// ChatWsHandler fiber.Handler // or *chat.WsHandler
@@ -26,16 +28,19 @@ func NewContainer(db *bun.DB) *Container {
 	authSvc := auth.NewService(authRepo, profileRepo)
 	profileSvc := profile.NewService(profileRepo)
 	friendSvc := friend.NewService(friendRepo)
+	notificationSvc := notification.NewService()
 
 	authH := auth.NewHandler(authSvc)
 	profileH := profile.NewHandler(profileSvc)
 	friendH := friend.NewHandler(friendSvc)
+	notificationH := notification.NewHandler(notificationSvc)
 
 	return &Container{
-		AuthHandler:     authH,
-		ProfileHandler:  profileH,
-		FriendHandler:   friendH,
-		AuthMiddlerware: authM,
+		AuthHandler:         authH,
+		ProfileHandler:      profileH,
+		FriendHandler:       friendH,
+		AuthMiddlerware:     authM,
+		NotificationHandler: notificationH,
 	}
 
 }
