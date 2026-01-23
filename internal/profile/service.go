@@ -1,6 +1,9 @@
 package profile
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Service struct {
 	repo *Repository
@@ -23,4 +26,16 @@ func (s *Service) GetProfileByUserId(ctx context.Context, userId string) (*Profi
 		Bio:         uf.Bio,
 	}
 	return profile, err
+}
+
+func (s *Service) UpdateProfile(ctx context.Context, payload UpdateProfileRequest) error {
+	profile := &UserProfile{
+		UserID:      payload.UserID,
+		DisplayName: payload.DisplayName,
+		AvatarURL:   payload.AvatarURL,
+		Bio:         payload.Bio,
+		UpdatedAt:   time.Now(),
+	}
+
+	return s.repo.UpdateProfile(ctx, profile)
 }

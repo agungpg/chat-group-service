@@ -21,13 +21,33 @@ func (h *Handler) GetProfile(c *fiber.Ctx) error {
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
+			"message": err.Error(),
 		})
 	}
 
 	return c.JSON(fiber.Map{
-		"data":   profile,
-		"status": 200,
-		"error":  nil,
+		"data":    profile,
+		"status":  200,
+		"message": nil,
+	})
+}
+
+func (h *Handler) UpdateProfile(c *fiber.Ctx) error {
+	var payload UpdateProfileRequest
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid input",
+		})
+	}
+
+	err := h.service.UpdateProfile(c.Context(), payload)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Update profile is success!",
 	})
 }

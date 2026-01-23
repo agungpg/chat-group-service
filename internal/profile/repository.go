@@ -38,3 +38,21 @@ func (r *Repository) GetProfileByUserId(ctx context.Context, userId string) (*Us
 
 	return profile, nil
 }
+
+func (r *Repository) UpdateProfile(ctx context.Context, profile *UserProfile) error {
+	q := r.db.NewUpdate().
+		Model(&UserProfile{}).Set("updated_at = ?", profile.UpdatedAt)
+
+	if profile.DisplayName != "" {
+		q.Set("display_name = ?", profile.DisplayName)
+	}
+	if profile.AvatarURL != "" {
+		q.Set("avatar_url = ?", profile.AvatarURL)
+	}
+	if profile.Bio != "" {
+		q.Set("bio = ?", profile.Bio)
+	}
+	_, err := q.Where("user_id = ?", profile.UserID).Exec(ctx)
+
+	return err
+}
