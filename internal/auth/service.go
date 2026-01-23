@@ -2,24 +2,40 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/agungpg/group-chat-service/internal/profile"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service struct {
-	repo *Repository
+	repo    *Repository
+	profile ProfileCreator
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo}
+func NewService(repo *Repository, profile ProfileCreator) *Service {
+	return &Service{repo, profile}
 }
 
 func (s *Service) Register(ctx context.Context, payload RegistrationPayload) error {
+
+	fmt.Println("Register service is running")
+	tx, err := s.repo.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if rErr := tx.Rollback(); rErr != nil && rErr != sql.ErrTxDone {
+			fmt.Printf("rollback error: %v", rErr)
+		}
+	}()
+
 	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 	user := &User{
 		ID:        uuid.New().String(),
@@ -30,7 +46,26 @@ func (s *Service) Register(ctx context.Context, payload RegistrationPayload) err
 		UpdatedAt: time.Now(),
 	}
 
-	return s.repo.CreateUser(ctx, user)
+	err = s.repo.CreateUser(ctx, user, &tx)
+	if err != nil {
+		return err
+	}
+	fmt.Println("CreateUser success")
+	profile := &profile.UserProfile{
+		UserID:      user.ID,
+		DisplayName: payload.DisplayName,
+		AvatarURL:   payload.AvatarURL,
+		Bio:         payload.Bio,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}
+
+	err = s.profile.CreateProfile(ctx, profile, &tx)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *Service) Login(ctx context.Context, payload LoginPayload) (string, error) {

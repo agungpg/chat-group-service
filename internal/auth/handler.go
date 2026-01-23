@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -25,6 +27,7 @@ type authInput struct {
 }
 
 func (h *Handler) Register(c *fiber.Ctx) error {
+	fmt.Printf("Register handler is running")
 	var payload RegistrationPayload
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
