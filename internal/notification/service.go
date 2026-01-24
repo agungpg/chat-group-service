@@ -54,7 +54,7 @@ func (s *Service) SendPushNotification(ctx context.Context, payload PushNotifica
 		},
 	}
 
-	id, err := client.Send(ctx, msg)
+	_, err = client.Send(ctx, msg)
 	if err != nil {
 		return fmt.Errorf("send push failed: %w", err)
 	}

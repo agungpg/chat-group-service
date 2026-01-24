@@ -50,7 +50,7 @@ func (s *Service) Register(ctx context.Context, payload RegistrationPayload) err
 	if err != nil {
 		return err
 	}
-	fmt.Println("CreateUser success")
+
 	profile := &profile.UserProfile{
 		UserID:      user.ID,
 		DisplayName: payload.DisplayName,
@@ -86,4 +86,27 @@ func (s *Service) Login(ctx context.Context, payload LoginPayload) (string, erro
 	secret := os.Getenv("JWT_SECRET")
 
 	return token.SignedString([]byte(secret))
+}
+
+func (s *Service) RegisterUserDevice(ctx context.Context, payload DeviceRegistrationPayload) error {
+	userDevice := &UserDevice{
+		ID:          uuid.New().String(),
+		UserID:      payload.UserID,
+		DeviceID:    payload.DeviceID,
+		Platform:    payload.Platform,
+		Provider:    payload.Provider,
+		Token:       payload.Token,
+		AppVersion:  payload.AppVersion,
+		DeviceModel: payload.DeviceModel,
+		LastSeenAt:  time.Now(),
+	}
+
+	err := s.repo.RegiserUserDevice(ctx, userDevice)
+
+	return err
+}
+
+func (s *Service) UnRegisterUserDevice(ctx context.Context, deviceId string) error {
+	err := s.repo.UnRegisterUserDevice(ctx, deviceId)
+	return err
 }

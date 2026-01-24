@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/agungpg/group-chat-service/pkg/utils"
 	"github.com/uptrace/bun"
@@ -27,7 +28,44 @@ func (r *Repository) CreateUser(ctx context.Context, user *User, tx *bun.Tx) err
 
 func (r *Repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	user := new(User)
-	err := r.db.NewSelect().Model(user).Where("username = ?", username).Where("is_deleted = FALSE").Scan(ctx)
+	err := r.db.NewSelect().
+		Model(user).
+		Where("username = ?", username).
+		Where("is_deleted = FALSE").
+		Scan(ctx)
 
 	return user, err
+}
+
+func (r *Repository) RegiserUserDevice(ctx context.Context, userDevice *UserDevice) error {
+	_, err := r.db.NewInsert().
+		Model(userDevice).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *Repository) FindActiveUserDeviceByUserId(ctx context.Context, userId string) (UserDevice, error) {
+	userDevice := new(UserDevice)
+	err := r.db.NewSelect().
+		Model(userDevice).
+		Where("user_id = ?", userId).
+		Where("is_active = ?", true).
+		Where("revoked_at = ?", nil).
+		Limit(1).
+		Scan(ctx)
+
+	return *userDevice, err
+}
+
+func (r *Repository) UnRegisterUserDevice(ctx context.Context, deviceId string) error {
+	_, err := r.db.NewUpdate().
+		Model(&UserDevice{}).
+		Set("revoked_at = ?", time.Now()).
+		Set("updated_at = ?", time.Now()).
+		Set("is_active = ?", false).
+		Where("device_id = ?", deviceId).
+		Exec(ctx)
+
+	return err
 }
