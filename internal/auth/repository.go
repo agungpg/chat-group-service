@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/agungpg/group-chat-service/pkg/utils"
@@ -19,7 +18,6 @@ func NewRepository(db *bun.DB) *Repository {
 
 func (r *Repository) CreateUser(ctx context.Context, user *User, tx *bun.Tx) error {
 
-	fmt.Println("CreateUser repo is running")
 	runner := utils.GetQueryRunner(tx, r.db)
 
 	_, err := runner.NewInsert().Model(user).Exec(ctx)
@@ -68,4 +66,23 @@ func (r *Repository) UnRegisterUserDevice(ctx context.Context, deviceId string) 
 		Exec(ctx)
 
 	return err
+}
+
+func (r *Repository) GetActiveUserDeviceTokens(ctx context.Context, userId string) (string, error) {
+	devices := new(UserDevice)
+
+	err := r.db.NewSelect().
+		Model(devices).
+		Where("user_id = ?", userId).
+		Where("is_active = TRUE").
+		Where("is_deleted = FALSE").
+		Where("revoked_at IS NULL").
+		Limit(1).
+		Scan(ctx)
+
+	if err != nil {
+		return "", err
+	}
+
+	return devices.Token, nil
 }

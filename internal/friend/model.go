@@ -36,3 +36,10 @@ type Friendship struct {
 	UserHighID string    `bun:"user_high_id,pk,notnull"`
 	CreatedAt  time.Time `bun:"created_at,notnull,default:current_timestamp"`
 }
+
+type userSummary struct {
+	ID          string `bun:"id"`
+	Username    string `bun:"username"`
+	DisplayName string `bun:"display_name"`
+	AvatarURL   string `bun:"avatar_url"`
+}

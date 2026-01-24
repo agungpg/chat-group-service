@@ -27,8 +27,8 @@ func NewContainer(db *bun.DB) *Container {
 
 	authSvc := auth.NewService(authRepo, profileRepo)
 	profileSvc := profile.NewService(profileRepo)
-	friendSvc := friend.NewService(friendRepo)
 	notificationSvc := notification.NewService()
+	friendSvc := friend.NewService(friendRepo, authRepo, notificationSvc)
 
 	authH := auth.NewHandler(authSvc)
 	profileH := profile.NewHandler(profileSvc)

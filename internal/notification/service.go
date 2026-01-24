@@ -54,10 +54,12 @@ func (s *Service) SendPushNotification(ctx context.Context, payload PushNotifica
 		},
 	}
 
-	_, err = client.Send(ctx, msg)
+	notifId, err := client.Send(ctx, msg)
 	if err != nil {
 		return fmt.Errorf("send push failed: %w", err)
 	}
+
+	fmt.Println("Notification sent: ", notifId)
 
 	return nil
 }

@@ -11,5 +11,8 @@ func RegisterRoutes(app *fiber.App, c *Container) {
 	app.Get("/profile", c.AuthMiddlerware.JWTMiddleware(), c.ProfileHandler.GetProfile)
 	app.Put("/profile", c.AuthMiddlerware.JWTMiddleware(), c.ProfileHandler.UpdateProfile)
 
+	app.Post("/friend/send-request", c.AuthMiddlerware.JWTMiddleware(), c.FriendHandler.SendFriendRequest)
+	app.Get("/friend/requests", c.AuthMiddlerware.JWTMiddleware(), c.FriendHandler.GetIncomingRequestList)
+
 	app.Post("/notification/push", c.AuthMiddlerware.JWTMiddleware(), c.NotificationHandler.PushNotification)
 }
