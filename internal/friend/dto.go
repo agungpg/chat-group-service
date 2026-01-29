@@ -12,3 +12,7 @@ type FriendRequestDTO struct {
 type SendFriendRequestPayload struct {
 	AddresseeID string `json:"userId"`
 }
+
+type AcceptFriendRequestPayload struct {
+	ID string `json:"id"`
+}

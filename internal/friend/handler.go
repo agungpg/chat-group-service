@@ -85,3 +85,27 @@ func (h *Handler) GetIncomingRequestList(c *fiber.Ctx) error {
 		},
 	})
 }
+
+func (h *Handler) AcceptRequest(c *fiber.Ctx) error {
+	var payload AcceptFriendRequestPayload
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid input",
+		})
+	}
+
+	claims := c.Locals("userClaims").(jwt.MapClaims)
+	userId := claims["id"].(string)
+
+	err := h.service.AcceptRequest(c.Context(), userId, payload.ID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "friend request accepted!",
+	})
+}

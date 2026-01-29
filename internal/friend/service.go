@@ -2,7 +2,9 @@ package friend
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"time"
 
 	notif "github.com/agungpg/group-chat-service/internal/notification"
 	"github.com/google/uuid"
@@ -94,6 +96,44 @@ func (s *Service) GetFriendRequestList(ctx context.Context, userId, requestType 
 	}
 
 	return dtos, total, nil
+}
+
+func (s *Service) AcceptRequest(ctx context.Context, userId, frId string) error {
+	tx, err := s.repo.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if rErr := tx.Rollback(); rErr != nil && rErr != sql.ErrTxDone {
+			fmt.Printf("rollback error: %v", rErr)
+		}
+	}()
+
+	fr, err := s.repo.GetFriendRequest(ctx, frId, FriendRequestStatusPending)
+	if err != nil {
+		return err
+	}
+	fmt.Println("fr :", fr)
+
+	fmt.Println("AcceptRequest service is runnng: ", frId)
+	err = s.repo.AcceptRequest(ctx, frId, &tx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("AcceptRequest  is pass")
+	friendship := Friendship{
+		UserLowID:  fr.AddresseeID,
+		UserHighID: fr.RequesterID,
+		CreatedAt:  time.Now(),
+	}
+	fmt.Println("friendship: ", friendship)
+	err = s.repo.CreateFriendship(ctx, friendship, &tx)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func getFriendRequestUserId(frList []FriendRequest, requestType string) []string {

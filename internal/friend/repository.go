@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/agungpg/group-chat-service/pkg/utils"
 	"github.com/uptrace/bun"
 )
 
@@ -21,6 +22,21 @@ func (r *Repository) CreateFriendRequest(ctx context.Context, fr FriendRequest) 
 		Exec(ctx)
 
 	return err
+}
+
+func (r *Repository) GetFriendRequest(ctx context.Context, id string, status FriendRequestStatus) (*FriendRequest, error) {
+	var fr FriendRequest
+
+	err := r.db.NewSelect().
+		Model(&fr).
+		Where("id = ?", id).
+		Where("status = ?", status).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fr, nil
 }
 
 func (r *Repository) GetIncomingRequestList(ctx context.Context, userId string, limit, offset int) ([]FriendRequest, int, error) {
@@ -53,13 +69,23 @@ func (r *Repository) GetOutgoingRequestsList(ctx context.Context, userId string,
 	return frList, total, err
 }
 
-func (r *Repository) AcceptRequest(ctx context.Context, id string) error {
-	_, err := r.db.NewUpdate().
+func (r *Repository) AcceptRequest(ctx context.Context, id string, tx *bun.Tx) error {
+	runner := utils.GetQueryRunner(tx, r.db)
+
+	_, err := runner.NewUpdate().
 		Model(&FriendRequest{}).
 		Set("updated_at = ?", time.Now()).
-		Set("status = accepted").
+		Set("status = ?", FriendRequestStatusAccepted).
 		Where("id = ?", id).
 		Exec(ctx)
+
+	return err
+}
+
+func (r *Repository) CreateFriendship(ctx context.Context, fs Friendship, tx *bun.Tx) error {
+	runner := utils.GetQueryRunner(tx, r.db)
+
+	_, err := runner.NewInsert().Model(&fs).Exec(ctx)
 
 	return err
 }
@@ -68,7 +94,7 @@ func (r *Repository) DeclineRequest(ctx context.Context, id string) error {
 	_, err := r.db.NewUpdate().
 		Model(&FriendRequest{}).
 		Set("updated_at = ?", time.Now()).
-		Set("status = declined").
+		Set("status = ?", FriendRequestStatusDeclined).
 		Where("id = ?", id).
 		Exec(ctx)
 
