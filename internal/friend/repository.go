@@ -101,6 +101,42 @@ func (r *Repository) DeclineRequest(ctx context.Context, id string) error {
 	return err
 }
 
+func (r *Repository) CancelRequest(ctx context.Context, userId, requestId string) error {
+	_, err := r.db.NewUpdate().
+		Model(&FriendRequest{}).
+		Set("updated_at = ?", time.Now()).
+		Set("status = ?", FriendRequestStatusCancelled).
+		Where("id = ?", requestId).
+		Where("requester_id = ?", userId).
+		Where("status = ?", FriendRequestStatusPending).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *Repository) RemoveFriend(ctx context.Context, userId, friendUserId string) error {
+	_, err := r.db.NewDelete().
+		Model((*Friendship)(nil)).
+		Where("(user_low_id = ? AND user_high_id = ?) OR (user_low_id = ? AND user_high_id = ?)", userId, friendUserId, friendUserId, userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *Repository) GetFriends(ctx context.Context, userId string, limit, offset int) ([]Friendship, int, error) {
+	rows := make([]Friendship, 0, limit)
+
+	total, err := r.db.NewSelect().
+		Model(&rows).
+		Where("user_low_id = ? OR user_high_id = ?", userId, userId).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		ScanAndCount(ctx)
+
+	return rows, total, err
+}
+
 func (r *Repository) GetUserSummaries(ctx context.Context, userIDs []string) (map[string]userSummary, error) {
 	if len(userIDs) == 0 {
 		return map[string]userSummary{}, nil

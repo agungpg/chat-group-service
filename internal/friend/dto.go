@@ -16,3 +16,14 @@ type SendFriendRequestPayload struct {
 type ActionFriendRequestPayload struct {
 	ID string `json:"id"`
 }
+
+type RemoveFriendPayload struct {
+	UserID string `json:"userId"`
+}
+
+type FriendUser struct {
+	ID          string `json:"id"`
+	UserName    string `json:"userName"`
+	DisplayName string `json:"displayName"`
+	AvatarUrl   string `json:"avatarUrl"`
+}

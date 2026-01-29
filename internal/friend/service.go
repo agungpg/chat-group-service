@@ -141,6 +141,51 @@ func (s *Service) DeclineRequest(ctx context.Context, frId string) error {
 
 	return err
 }
+
+func (s *Service) CancelRequest(ctx context.Context, userId, frId string) error {
+	return s.repo.CancelRequest(ctx, userId, frId)
+}
+
+func (s *Service) RemoveFriend(ctx context.Context, userId, friendUserId string) error {
+	return s.repo.RemoveFriend(ctx, userId, friendUserId)
+}
+
+func (s *Service) ListFriends(ctx context.Context, userId string, limit, offset int) ([]FriendUser, int, error) {
+	friendships, total, err := s.repo.GetFriends(ctx, userId, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	friendIDs := make([]string, 0, len(friendships))
+	for _, fs := range friendships {
+		if fs.UserLowID == userId {
+			friendIDs = append(friendIDs, fs.UserHighID)
+			continue
+		}
+		friendIDs = append(friendIDs, fs.UserLowID)
+	}
+
+	userSummaries, err := s.repo.GetUserSummaries(ctx, friendIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	friends := make([]FriendUser, 0, len(friendIDs))
+	for _, id := range friendIDs {
+		usr, ok := userSummaries[id]
+		if !ok {
+			continue
+		}
+		friends = append(friends, FriendUser{
+			ID:          id,
+			UserName:    usr.Username,
+			DisplayName: usr.DisplayName,
+			AvatarUrl:   usr.AvatarURL,
+		})
+	}
+
+	return friends, total, nil
+}
 func getFriendRequestUserId(frList []FriendRequest, requestType string) []string {
 	ids := make([]string, 0, len(frList))
 	seen := make(map[string]struct{}, len(frList))
