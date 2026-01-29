@@ -13,6 +13,6 @@ type SendFriendRequestPayload struct {
 	AddresseeID string `json:"userId"`
 }
 
-type AcceptFriendRequestPayload struct {
+type ActionFriendRequestPayload struct {
 	ID string `json:"id"`
 }

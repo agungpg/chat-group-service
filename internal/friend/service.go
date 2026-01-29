@@ -136,6 +136,11 @@ func (s *Service) AcceptRequest(ctx context.Context, userId, frId string) error 
 	return tx.Commit()
 }
 
+func (s *Service) DeclineRequest(ctx context.Context, frId string) error {
+	err := s.repo.DeclineRequest(ctx, frId)
+
+	return err
+}
 func getFriendRequestUserId(frList []FriendRequest, requestType string) []string {
 	ids := make([]string, 0, len(frList))
 	seen := make(map[string]struct{}, len(frList))
@@ -157,6 +162,5 @@ func getFriendRequestUserId(frList []FriendRequest, requestType string) []string
 		}
 	}
 
-	fmt.Println("fr ids: ", ids)
 	return ids
 }

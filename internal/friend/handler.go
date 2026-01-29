@@ -87,7 +87,7 @@ func (h *Handler) GetIncomingRequestList(c *fiber.Ctx) error {
 }
 
 func (h *Handler) AcceptRequest(c *fiber.Ctx) error {
-	var payload AcceptFriendRequestPayload
+	var payload ActionFriendRequestPayload
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Invalid input",
@@ -107,5 +107,26 @@ func (h *Handler) AcceptRequest(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "friend request accepted!",
+	})
+}
+
+func (h *Handler) DeclineRequest(c *fiber.Ctx) error {
+	var payload ActionFriendRequestPayload
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid input",
+		})
+	}
+
+	err := h.service.DeclineRequest(c.Context(), payload.ID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "friend request declined!",
 	})
 }
