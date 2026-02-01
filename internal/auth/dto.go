@@ -27,3 +27,8 @@ type DeviceRegistrationPayload struct {
 type UnRegisterDevicePayload struct {
 	DeviceID string `json:"device_id"`
 }
+
+type CheckUsernameAndEmailDTO struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}

@@ -86,3 +86,16 @@ func (r *Repository) GetActiveUserDeviceTokens(ctx context.Context, userId strin
 
 	return devices.Token, nil
 }
+
+func (r *Repository) GetUserByEmailOrUsername(ctx context.Context, username, email string) ([]User, error) {
+	users := make([]User, 0, 2)
+
+	err := r.db.NewSelect().
+		Model(&users).
+		Where("username = ?", username).
+		WhereOr("email = ?", email).
+		Where("is_deleted = FALSE").
+		Scan(ctx)
+
+	return users, err
+}
