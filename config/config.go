@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/agungpg/group-chat-service/pkg/utils"
 	"github.com/joho/godotenv"
 )
 
@@ -13,5 +14,34 @@ func LoadEnv() {
 		if err := godotenv.Load(); err != nil {
 			log.Printf("Failed to load .env file: %v", err)
 		}
+	}
+}
+
+type Config struct {
+	Storage StorageConfig
+}
+
+type StorageConfig struct {
+	PublicBucket  string
+	PrivateBucket string
+}
+
+// Prefer required env for critical values
+func Load() Config {
+	publicBucket := utils.GetEnvOrDefault("S3_BUCKET_PUBLIC", "")
+	privateBucket := utils.GetEnvOrDefault("S3_BUCKET_PRIVATE", "")
+
+	if publicBucket == "" {
+		log.Fatal("missing env: S3_BUCKET_PUBLIC")
+	}
+	if privateBucket == "" {
+		log.Fatal("missing env: S3_BUCKET_PRIVATE")
+	}
+
+	return Config{
+		Storage: StorageConfig{
+			PublicBucket:  publicBucket,
+			PrivateBucket: privateBucket,
+		},
 	}
 }
