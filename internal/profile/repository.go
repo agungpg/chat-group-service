@@ -31,7 +31,10 @@ func (r *Repository) CreateProfile(ctx context.Context, profile *UserProfile, tx
 
 func (r *Repository) GetProfileByUserId(ctx context.Context, userId string) (*UserProfile, error) {
 	profile := new(UserProfile)
-	err := r.db.NewSelect().Model(profile).Where("user_id = ?", userId).Scan(ctx)
+	err := r.db.NewSelect().
+		Model(profile).
+		Where("user_id = ?", userId).
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}

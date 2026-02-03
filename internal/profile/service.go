@@ -7,10 +7,11 @@ import (
 
 type Service struct {
 	repo *Repository
+	file FileAdapter
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo}
+func NewService(repo *Repository, file FileAdapter) *Service {
+	return &Service{repo, file}
 }
 
 func (s *Service) GetProfileByUserId(ctx context.Context, userId string) (*ProfileResponse, error) {
@@ -24,6 +25,14 @@ func (s *Service) GetProfileByUserId(ctx context.Context, userId string) (*Profi
 		DisplayName: uf.DisplayName,
 		AvatarURL:   uf.AvatarURL,
 		Bio:         uf.Bio,
+	}
+	if uf.AvatarURL != "" {
+		res, err := s.file.GetPresignView(ctx, uf.AvatarURL)
+		if err == nil && res != nil && res.PresignedUrl != "" {
+			profile.AvatarURL = res.PresignedUrl
+		} else {
+			profile.AvatarURL = ""
+		}
 	}
 	return profile, err
 }

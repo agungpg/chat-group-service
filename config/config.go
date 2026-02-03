@@ -28,14 +28,14 @@ type StorageConfig struct {
 
 // Prefer required env for critical values
 func Load() Config {
-	publicBucket := utils.GetEnvOrDefault("S3_BUCKET_PUBLIC", "")
-	privateBucket := utils.GetEnvOrDefault("S3_BUCKET_PRIVATE", "")
+	publicBucket := utils.GetEnvOrDefault("STORAGE_BUCKET_PUBLIC", "")
+	privateBucket := utils.GetEnvOrDefault("STORAGE_BUCKET_PRIVATE", "")
 
 	if publicBucket == "" {
-		log.Fatal("missing env: S3_BUCKET_PUBLIC")
+		log.Fatal("missing env: STORAGE_BUCKET_PUBLIC")
 	}
 	if privateBucket == "" {
-		log.Fatal("missing env: S3_BUCKET_PRIVATE")
+		log.Fatal("missing env: STORAGE_BUCKET_PRIVATE")
 	}
 
 	return Config{

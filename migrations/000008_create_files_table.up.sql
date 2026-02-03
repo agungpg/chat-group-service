@@ -1,8 +1,5 @@
 BEGIN;
 
--- Use pgcrypto for gen_random_uuid()
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 -- Create enum for scope (if it doesn't exist)
 DO $$
 BEGIN
@@ -15,11 +12,23 @@ BEGIN
   END IF;
 END
 $$;
+-- Create enum for status (if it doesn't exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'file_status_enum') THEN
+    CREATE TYPE file_status_enum AS ENUM (
+      'pending',
+      'ready',
+      'deleted'
+    );
+  END IF;
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS files (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                uuid PRIMARY KEY,
 
-  created_by        uuid NOT NULL,
+  created_by        text NOT NULL,
   bucket            text NOT NULL,
   object_key        text NOT NULL,
 
@@ -28,6 +37,8 @@ CREATE TABLE IF NOT EXISTS files (
   size_bytes        bigint NOT NULL CHECK (size_bytes >= 0),
 
   scope             file_scope_enum NOT NULL,
+  
+  status             file_status_enum NOT NULL,
 
   created_at        timestamptz NOT NULL DEFAULT now(),
   deleted_at        timestamptz,

@@ -110,3 +110,23 @@ func (s *Service) UnRegisterUserDevice(ctx context.Context, deviceId string) err
 	err := s.repo.UnRegisterUserDevice(ctx, deviceId)
 	return err
 }
+
+func (s *Service) CheckIsUsernameOrEmailTaken(ctx context.Context, payload CheckUsernameAndEmailDTO) (interface{}, error) {
+	users, err := s.repo.GetUserByEmailOrUsername(ctx, payload.Username, payload.Email)
+
+	availability := map[string]bool{
+		"isEmailTaken":    false,
+		"isUsernameTaken": false,
+	}
+
+	for i := 0; i < len(users); i++ {
+		if users[i].Email == payload.Email {
+			availability["isEmailTaken"] = true
+		}
+		if users[i].Username == payload.Username {
+			availability["isUsernameTaken"] = true
+		}
+	}
+
+	return availability, err
+}

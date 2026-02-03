@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/agungpg/group-chat-service/config"
 	"github.com/agungpg/group-chat-service/internal/app"
 	"github.com/agungpg/group-chat-service/pkg/database"
+	"github.com/agungpg/group-chat-service/pkg/storage"
 )
 
 func main() {
@@ -17,7 +19,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	container := app.NewContainer(database.DB)
+	cfg := config.Load()
+
+	if err := storage.Connect(context.Background()); err != nil {
+		fmt.Printf("Failed to connect to storage: %v\n", err)
+		os.Exit(1)
+	}
+
+	container := app.NewContainer(database.DB, storage.S3Client, &cfg.Storage)
 
 	server := app.NewServer(container)
 

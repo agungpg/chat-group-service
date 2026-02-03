@@ -7,87 +7,25 @@ import (
 
 	"github.com/agungpg/group-chat-service/config"
 	"github.com/agungpg/group-chat-service/pkg/utils"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 )
 
 type Service struct {
-	s3      *s3.Client
-	repo    *Repository
-	strConf *config.StorageConfig
+	repo     *Repository
+	storage  StorageAdapter
+	strgConf *config.StorageConfig
 }
 
-func NewService(repo *Repository, s3 *s3.Client) *Service {
+func NewService(repo *Repository, storage StorageAdapter, strgConf *config.StorageConfig) *Service {
 	return &Service{
-		repo: repo,
-		s3:   s3,
+		repo:     repo,
+		storage:  storage,
+		strgConf: strgConf,
 	}
 }
 
-func PresignUploadUrl(ctx context.Context, presigner *s3.PresignClient, bucket, key, contentType string, expires time.Duration) (string, error) {
-	in := &s3.PutObjectInput{
-		Bucket:      aws.String(bucket),
-		Key:         aws.String(key),
-		ContentType: aws.String(contentType), // client MUST send the same Content-Type header
-	}
-
-	out, err := presigner.PresignPutObject(ctx, in, func(o *s3.PresignOptions) {
-		o.Expires = expires
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return out.URL, nil
-}
-
-func PresignViewURL(
-	ctx context.Context,
-	presigner *s3.PresignClient,
-	bucket, key string,
-	expires time.Duration,
-) (string, error) {
-
-	in := &s3.GetObjectInput{
-		Bucket:                     aws.String(bucket),
-		Key:                        aws.String(key),
-		ResponseContentDisposition: aws.String("inline"),
-	}
-
-	out, err := presigner.PresignGetObject(ctx, in, func(o *s3.PresignOptions) {
-		o.Expires = expires
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return out.URL, nil
-}
-
-func PresignDownloadURL(
-	ctx context.Context,
-	presigner *s3.PresignClient,
-	bucket, key, filename string,
-	expires time.Duration,
-) (string, error) {
-
-	disposition := fmt.Sprintf(`attachment; filename="%s"`, filename)
-
-	in := &s3.GetObjectInput{
-		Bucket:                     aws.String(bucket),
-		Key:                        aws.String(key),
-		ResponseContentDisposition: aws.String(disposition),
-	}
-
-	out, err := presigner.PresignGetObject(ctx, in, func(o *s3.PresignOptions) {
-		o.Expires = expires
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return out.URL, nil
+func (s *Service) Exist(ctx context.Context, bucket, key string) error {
+	return s.storage.Exists(ctx, bucket, key)
 }
 
 func (s *Service) CreatePresignUpload(ctx context.Context, f UploadPresignRequestDTO, userId string) (*UploadPresignResponseDTO, error) {
@@ -101,11 +39,11 @@ func (s *Service) CreatePresignUpload(ctx context.Context, f UploadPresignReques
 	fileName := fileId + utils.ExtFromContentType(f.ContentType)
 
 	if f.FileType == "avatar" {
-		bucket = s.strConf.PrivateBucket
+		bucket = s.strgConf.PublicBucket
 		scope = FileScopeAvatar
 		key = string(scope) + "/" + fileName
 	} else {
-		bucket = s.strConf.PublicBucket
+		bucket = s.strgConf.PrivateBucket
 		scope = FileScopeChatAttachment
 		key = string(scope) + "/" + fileName
 	}
@@ -116,16 +54,17 @@ func (s *Service) CreatePresignUpload(ctx context.Context, f UploadPresignReques
 		OriginalFilename: f.FileName,
 		SizeBytes:        f.SizeBytes,
 		Scope:            scope,
+		Status:           FileScope(FileStatusPending),
 		CreatedBy:        userId,
+		CreatedAt:        time.Now(),
 	}
 
 	err := s.repo.CreateFile(ctx, file)
 	if err != nil {
 		return nil, err
 	}
-	presigner := s3.NewPresignClient(s.s3)
 	expiresIn := 15 * time.Minute
-	url, err := PresignUploadUrl(ctx, presigner, bucket, key, f.ContentType, expiresIn)
+	url, err := s.storage.PresignUploadURL(ctx, bucket, key, f.ContentType, expiresIn)
 	if err != nil {
 		return nil, err
 	}
@@ -135,4 +74,43 @@ func (s *Service) CreatePresignUpload(ctx context.Context, f UploadPresignReques
 		ExpiresIn:    expiresIn,
 		FileId:       fileId,
 	}, nil
+}
+
+func (s *Service) GetPresignView(ctx context.Context, fileId string) (*UploadPresignResponseDTO, error) {
+	file, err := s.repo.GetFileById(ctx, fileId)
+	if err != nil {
+		return nil, err
+	}
+
+	expiresIn := 6 * time.Hour
+
+	url, err := s.storage.PresignViewURL(ctx, file.Bucket, file.ObjectKey, expiresIn)
+
+	return &UploadPresignResponseDTO{
+		PresignedUrl: url,
+		ExpiresIn:    expiresIn,
+		FileId:       fileId,
+	}, nil
+}
+
+func (s *Service) UpdateFileStatus(ctx context.Context, fileId string, status FileStatus) error {
+	file, err := s.repo.GetFileById(ctx, fileId)
+	if err != nil {
+		return err
+	}
+
+	if file == nil {
+		return fmt.Errorf("File not found!")
+	}
+
+	if status == FileStatusReady {
+		err = s.Exist(ctx, file.Bucket, file.ObjectKey)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	err = s.repo.UpdateFileStatus(ctx, fileId, status)
+	return err
 }

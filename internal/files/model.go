@@ -13,6 +13,14 @@ const (
 	FileScopeChatAttachment FileScope = "chat_attachment"
 )
 
+type FileStatus string
+
+const (
+	FileStatusPending FileStatus = "pending"
+	FileStatusReady   FileStatus = "ready"
+	FileStatusDeleted FileStatus = "deleted"
+)
+
 type Files struct {
 	bun.BaseModel `bun:"table:files"`
 
@@ -23,6 +31,7 @@ type Files struct {
 	ContentType      string    `bun:"content_type,notnull"`
 	SizeBytes        int64     `bun:"size_bytes,notnull"`
 	Scope            FileScope `bun:"scope,notnull"`
+	Status           FileScope `bun:"status,notnull"`
 	CreatedBy        string    `bun:"created_by,notnull"`
 	CreatedAt        time.Time `bun:"created_at,notnull,default:current_timestamp"`
 	DeletedAt        time.Time `bun:"deleted_at,nullzero"`
